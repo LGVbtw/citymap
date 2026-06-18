@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   User,
   addNotification,
@@ -23,6 +24,9 @@ import {
   logout,
   updateUser,
 } from '../../store';
+
+const NOTIF_PREFS_KEY = 'placelist_notif_prefs';
+const DEFAULT_NOTIF_PREFS = { share: true, invite: true, ai: true, reminder: false };
 
 const C = {
   bg: '#0C0C14',
@@ -51,9 +55,7 @@ export default function ProfileScreen() {
   const [pwOk, setPwOk] = useState(false);
   const [pwError, setPwError] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [notifPrefs, setNotifPrefs] = useState({
-    share: true, invite: true, ai: true, reminder: false,
-  });
+  const [notifPrefs, setNotifPrefs] = useState(DEFAULT_NOTIF_PREFS);
 
   useEffect(() => {
     (async () => {
@@ -65,6 +67,8 @@ export default function ProfileScreen() {
       setListCount(lists.length);
       setPlaceCount(lists.flatMap(l => l.places).length);
       setPublicCount(lists.filter(l => l.isPublic).length);
+      const stored = await AsyncStorage.getItem(NOTIF_PREFS_KEY);
+      if (stored) setNotifPrefs({ ...DEFAULT_NOTIF_PREFS, ...JSON.parse(stored) });
     })();
   }, []);
 
@@ -243,9 +247,11 @@ export default function ProfileScreen() {
                 </View>
                 <Switch
                   value={notifPrefs[pref.key as keyof typeof notifPrefs]}
-                  onValueChange={v =>
-                    setNotifPrefs(p => ({ ...p, [pref.key]: v }))
-                  }
+                  onValueChange={v => {
+                    const updated = { ...notifPrefs, [pref.key]: v };
+                    setNotifPrefs(updated);
+                    AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(updated));
+                  }}
                   trackColor={{ false: C.muted, true: C.primary }}
                   thumbColor="white"
                 />

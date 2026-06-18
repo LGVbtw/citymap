@@ -11,12 +11,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   AI_SUGGESTIONS,
   ListItem,
   addNotification,
+  addPlace as addPlaceToList,
   createList,
   getCurrentUser,
   getUserLists,
@@ -64,6 +65,8 @@ export default function ListsScreen() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   const filtered = lists.filter(
     l =>
@@ -317,13 +320,28 @@ export default function ListsScreen() {
                 <TouchableOpacity
                   onPress={async () => {
                     if (!userId) return;
+                    const userLists = await getUserLists(userId);
+                    let favList = userLists.find(l => l.title === 'Favoris');
+                    if (!favList) {
+                      favList = await createList(userId, 'Favoris', 'Mes lieux favoris', '⭐', '#f7a84f');
+                    }
+                    if (!favList.places.some(p => p.name === sug.name)) {
+                      await addPlaceToList(favList.id, {
+                        name: sug.name, notes: sug.reason, type: sug.type,
+                        price: sug.price,
+                        googleMapsLink: `https://maps.google.com/?q=${encodeURIComponent(sug.name)}`,
+                        latitude: sug.lat, longitude: sug.lng,
+                        address: sug.address, rating: sug.rating,
+                      });
+                    }
                     await addNotification({
                       userId,
-                      title: `✨ ${sug.name} noté !`,
-                      message: `La suggestion "${sug.name}" a été notée dans vos favoris.`,
+                      title: `✨ ${sug.name} ajouté !`,
+                      message: `"${sug.name}" a été ajouté à votre liste Favoris.`,
                       type: 'ai',
                       isRead: false,
                     });
+                    reload();
                   }}
                   style={styles.aiSaveBtn}
                 >

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import {
   Alert,
   Image,
@@ -118,15 +119,25 @@ export default function ListDetailScreen() {
     reload();
   }
 
-  async function handleDeletePlace(placeId: string) {
+  function handleDeletePlace(placeId: string) {
     if (!list) return;
-    await deletePlace(list.id, placeId);
-    reload();
+    const place = list.places.find(p => p.id === placeId);
+    Alert.alert(
+      'Supprimer ce lieu ?',
+      `"${place?.name ?? 'Ce lieu'}" sera supprimé définitivement.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer', style: 'destructive', onPress: async () => {
+          await deletePlace(list.id, placeId);
+          reload();
+        }},
+      ],
+    );
   }
 
   async function handleShare() {
     if (!list || !userId) return;
-    await Linking.setString?.(list.shareLink).catch(() => {});
+    await Clipboard.setStringAsync(list.shareLink);
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
     await addNotification({
