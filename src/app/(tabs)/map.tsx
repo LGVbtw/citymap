@@ -42,7 +42,6 @@ const DEFAULT_COORDS = { latitude: 48.852, longitude: 2.782 };
 const DEFAULT_REGION = { ...DEFAULT_COORDS, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 const DEMO_USER = { login: 'demo@citymap.local', username: 'Demo CityMap', mdp: 'demo' };
 
-// Couleur par type de lieu
 const TYPE_COLOR: Record<string, string> = {
   restaurant: '#f7a84f',
   cafe: '#c47bf7',
@@ -56,8 +55,25 @@ const TYPE_COLOR: Record<string, string> = {
   shop: '#c47bf7',
 };
 
+const TYPE_ICON: Record<string, string> = {
+  restaurant: 'restaurant-outline',
+  cafe: 'cafe-outline',
+  bar: 'beer-outline',
+  museum: 'business-outline',
+  park: 'leaf-outline',
+  hotel: 'bed-outline',
+  tourism: 'compass-outline',
+  historic: 'hourglass-outline',
+  leisure: 'basketball-outline',
+  shop: 'bag-handle-outline',
+};
+
 function typeColor(type: string) {
   return TYPE_COLOR[type.toLowerCase()] ?? C.primary;
+}
+
+function typeIcon(type: string): any {
+  return TYPE_ICON[type.toLowerCase()] ?? 'location-outline';
 }
 
 // Reprise des helpers de App.js
@@ -124,6 +140,7 @@ export default function MapScreen() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const isBooting = !dbReady || loadingPlaces;
 
@@ -248,12 +265,21 @@ export default function MapScreen() {
                 <Marker
                   key={key}
                   coordinate={place.coordinate}
-                  pinColor={color}
                   onPress={() => setSelectedPlace(place)}
-                />
+                >
+                  <View style={[styles.markerPin, { backgroundColor: color }]}>
+                    <Ionicons name={typeIcon(place.displayType)} size={14} color="white" />
+                  </View>
+                </Marker>
               );
             })}
           </MapView>
+          <TouchableOpacity
+            style={styles.fullscreenBtn}
+            onPress={() => setIsFullscreen(true)}
+          >
+            <Ionicons name="expand-outline" size={18} color="white" />
+          </TouchableOpacity>
         </View>
 
         {/* Filter chips */}
@@ -267,6 +293,12 @@ export default function MapScreen() {
               onPress={() => setActiveFilter(null)}
               style={[styles.chip, !activeFilter && { backgroundColor: C.primary }]}
             >
+              <Ionicons
+                name="apps-outline"
+                size={11}
+                color={!activeFilter ? 'white' : C.textMuted}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.chipText, !activeFilter && { color: 'white' }]}>Tous</Text>
             </TouchableOpacity>
             {types.map(t => {
@@ -281,6 +313,12 @@ export default function MapScreen() {
                     active && { backgroundColor: `${color}25`, borderColor: `${color}60` },
                   ]}
                 >
+                  <Ionicons
+                    name={typeIcon(t)}
+                    size={11}
+                    color={active ? color : C.textMuted}
+                    style={{ marginRight: 4 }}
+                  />
                   <Text style={[styles.chipText, active && { color }]}>{t}</Text>
                 </TouchableOpacity>
               );
@@ -307,7 +345,7 @@ export default function MapScreen() {
               return (
                 <View key={key} style={styles.placeRow}>
                   <View style={[styles.placeIconWrap, { backgroundColor: `${color}18` }]}>
-                    <Ionicons name="location" size={18} color={color} />
+                    <Ionicons name={typeIcon(place.displayType)} size={18} color={color} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.placeName} numberOfLines={1}>
@@ -336,6 +374,45 @@ export default function MapScreen() {
         <View style={{ height: 24 }} />
       </ScrollView>
 
+      {/* Fullscreen map */}
+      <Modal
+        visible={isFullscreen}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setIsFullscreen(false)}
+      >
+        <View style={styles.fullscreenContainer}>
+          <MapView
+            style={StyleSheet.absoluteFillObject}
+            initialRegion={DEFAULT_REGION}
+            userInterfaceStyle="dark"
+            customMapStyle={DARK_MAP_STYLE}
+          >
+            {places.map(place => {
+              const key = `${place.osmType}-${place.osmId}`;
+              const color = typeColor(place.displayType);
+              return (
+                <Marker
+                  key={key}
+                  coordinate={place.coordinate}
+                  onPress={() => setSelectedPlace(place)}
+                >
+                  <View style={[styles.markerPin, { backgroundColor: color }]}>
+                    <Ionicons name={typeIcon(place.displayType)} size={14} color="white" />
+                  </View>
+                </Marker>
+              );
+            })}
+          </MapView>
+          <TouchableOpacity
+            style={styles.fullscreenCloseBtn}
+            onPress={() => setIsFullscreen(false)}
+          >
+            <Ionicons name="contract-outline" size={18} color="white" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
       {/* Place detail bottom sheet */}
       <Modal
         visible={!!selectedPlace}
@@ -354,7 +431,7 @@ export default function MapScreen() {
                   <View style={styles.sheetHandle} />
                   <View style={styles.sheetHeader}>
                     <View style={[styles.sheetIconWrap, { backgroundColor: `${color}20` }]}>
-                      <Ionicons name="location" size={22} color={color} />
+                      <Ionicons name={typeIcon(selectedPlace.displayType)} size={22} color={color} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.sheetName}>{selectedPlace.displayName}</Text>
@@ -467,6 +544,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
     backgroundColor: C.card, borderWidth: 1, borderColor: C.border,
+    flexDirection: 'row', alignItems: 'center',
   },
   chipText: { fontSize: 12, fontWeight: '600', color: C.textMuted, textTransform: 'capitalize' },
   section: { paddingHorizontal: 16 },
@@ -492,5 +570,29 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 10,
     backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
+  },
+  fullscreenContainer: {
+    flex: 1, backgroundColor: C.bg,
+  },
+  fullscreenBtn: {
+    position: 'absolute', top: 10, right: 10,
+    width: 34, height: 34, borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+  },
+  fullscreenCloseBtn: {
+    position: 'absolute', top: 54, right: 16,
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+  },
+  markerPin: {
+    width: 30, height: 30, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5, shadowRadius: 3, elevation: 5,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
   },
 });
