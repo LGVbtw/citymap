@@ -1,4 +1,26 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const CACHE_KEY = 'overpass_cache_serris';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+async function getCached() {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { timestamp, elements } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_TTL_MS) return null;
+    return elements;
+  } catch {
+    return null;
+  }
+}
+
+async function setCached(elements) {
+  try {
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), elements }));
+  } catch {}
+}
 
 const OVERPASS_API_URLS = [
   'https://z.overpass-api.de/api/interpreter',
@@ -75,17 +97,20 @@ const postOverpassQuery = async (query) => {
  * Les parametres sont gardes pour conserver la signature demandee.
  */
 export const fetchPlacesAround = async (lat, lon, radius = 1000) => {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(radius)) {
+    throw new Error('Coordonnees ou rayon invalides.');
+  }
+
+  const cached = await getCached();
+  if (cached) return cached;
+
   try {
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(radius)) {
-      throw new Error('Coordonnees ou rayon invalides.');
-    }
-
     const response = await postOverpassQuery(buildSerrisPlacesQuery());
-
-    return response.data?.elements ?? [];
+    const elements = response.data?.elements ?? [];
+    await setCached(elements);
+    return elements;
   } catch (error) {
     const message = getOverpassErrorMessage(error);
-
     console.error('fetchPlacesAround:', message);
     throw new Error(message);
   }
