@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const THEME_PREF_KEY = 'placelist_theme_pref';
+
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const DARK_C = {
   bg: '#0C0C14',
@@ -30,26 +33,29 @@ export const LIGHT_C = {
 type ThemeColors = typeof DARK_C;
 
 interface ThemeContextType {
+  themeMode: ThemeMode;
   isLightTheme: boolean;
-  toggleTheme: (value: boolean) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   C: ThemeColors;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
+  themeMode: 'dark',
   isLightTheme: false,
-  toggleTheme: () => {},
+  setThemeMode: () => {},
   C: DARK_C,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isLightTheme, setIsLightTheme] = useState(false);
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
+  const [systemScheme, setSystemScheme] = useState(Appearance.getColorScheme());
 
   useEffect(() => {
     (async () => {
       try {
-        const themePref = await AsyncStorage.getItem(THEME_PREF_KEY);
-        if (themePref === 'light') {
-          setIsLightTheme(true);
+        const stored = await AsyncStorage.getItem(THEME_PREF_KEY);
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          setThemeModeState(stored);
         }
       } catch (e) {
         console.error('Failed to load theme preference', e);
@@ -57,16 +63,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const toggleTheme = (value: boolean) => {
-    setIsLightTheme(value);
-    AsyncStorage.setItem(THEME_PREF_KEY, value ? 'light' : 'dark').catch(e =>
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemScheme(colorScheme);
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const setThemeMode = (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    AsyncStorage.setItem(THEME_PREF_KEY, mode).catch(e =>
       console.error('Failed to save theme preference', e)
     );
   };
 
+  const isLightTheme = themeMode === 'system' ? systemScheme !== 'dark' : themeMode === 'light';
+
   const C = isLightTheme ? LIGHT_C : DARK_C;
 
-  const value = useMemo(() => ({ isLightTheme, toggleTheme, C }), [isLightTheme, C]);
+  const value = useMemo(
+    () => ({ themeMode, isLightTheme, setThemeMode, C }),
+    [themeMode, isLightTheme, C],
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

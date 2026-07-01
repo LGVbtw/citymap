@@ -13,12 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  connecterUtilisateur,
-  initializeDatabase,
-  inscriptionUtilisateur,
-} from '../../../database';
+import NetInfo from '@react-native-community/netinfo';
 import { fetchPlacesAround } from '../../../overpass';
+import { Skeleton } from '../../components/Skeleton';
 import {
   addPlace as addPlaceToList,
   createList,
@@ -29,7 +26,6 @@ import { useAppTheme } from '../../context/ThemeContext';
 
 const DEFAULT_COORDS = { latitude: 48.852, longitude: 2.782 };
 const DEFAULT_REGION = { ...DEFAULT_COORDS, latitudeDelta: 0.04, longitudeDelta: 0.04 };
-const DEMO_USER = { login: 'demo@citymap.local', username: 'Demo CityMap', mdp: 'demo' };
 
 const TYPE_COLOR: Record<string, string> = {
   restaurant: '#f7a84f',
@@ -122,14 +118,13 @@ const DARK_MAP_STYLE = [
 ];
 
 export default function MapScreen() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [dbReady, setDbReady] = useState(false);
   const [places, setPlaces] = useState<any[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const { isLightTheme, C } = useAppTheme();
   const styles = useMemo(() => getStyles(C), [C]);
 
@@ -149,24 +144,13 @@ export default function MapScreen() {
     }, 50);
   }, []);
 
-  const isBooting = !dbReady || loadingPlaces;
+  const isBooting = loadingPlaces;
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        await initializeDatabase();
-        let user = await connecterUtilisateur(DEMO_USER.login, DEMO_USER.mdp);
-        if (!user) {
-          await inscriptionUtilisateur(DEMO_USER.login, DEMO_USER.username, DEMO_USER.mdp);
-          user = await connecterUtilisateur(DEMO_USER.login, DEMO_USER.mdp);
-        }
-        if (mounted) { setCurrentUser(user); setDbReady(true); }
-      } catch {
-        if (mounted) setDbReady(false);
-      }
-    })();
-    return () => { mounted = false; };
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOffline(!state.isConnected);
+    });
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -256,6 +240,13 @@ export default function MapScreen() {
         </View>
       </View>
 
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline-outline" size={14} color="#f7a84f" />
+          <Text style={styles.offlineBannerText}>Hors ligne — données en cache</Text>
+        </View>
+      )}
+
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
         {/* Map card */}
         <View style={styles.mapCard}>
@@ -341,9 +332,24 @@ export default function MapScreen() {
           </Text>
 
           {isBooting ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={C.primary} />
-              <Text style={styles.loadingText}>Récupération des lieux…</Text>
+            [1, 2, 3].map(i => (
+              <View key={i} style={styles.placeRow}>
+                <Skeleton style={{ width: 40, height: 40, borderRadius: 10 }} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton style={{ width: '60%', height: 14 }} />
+                  <Skeleton style={{ width: '35%', height: 10 }} />
+                </View>
+              </View>
+            ))
+          ) : displayed.length === 0 ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="location-outline" size={28} color={C.textMuted} />
+              </View>
+              <Text style={styles.emptyText}>Aucun lieu trouvé</Text>
+              <Text style={styles.emptySubtext}>
+                {activeFilter ? 'Essayez un autre filtre.' : 'Aucun lieu à proximité pour le moment.'}
+              </Text>
             </View>
           ) : (
             displayed.map(place => {
@@ -511,6 +517,13 @@ const getStyles = (C: any) => StyleSheet.create({
     minWidth: 80, justifyContent: 'center',
   },
   badgeText: { fontSize: 13, fontWeight: '600', color: C.text },
+  offlineBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 10, backgroundColor: 'rgba(247,168,79,0.12)',
+    borderWidth: 1, borderColor: 'rgba(247,168,79,0.3)',
+  },
+  offlineBannerText: { fontSize: 12, fontWeight: '600', color: '#f7a84f' },
   mapCard: {
     marginHorizontal: 16, marginBottom: 14,
     borderRadius: 20, overflow: 'hidden',
@@ -562,8 +575,13 @@ const getStyles = (C: any) => StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '600', color: C.textMuted, textTransform: 'capitalize' },
   section: { paddingHorizontal: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 12 },
-  loadingBox: { alignItems: 'center', paddingVertical: 32, gap: 12 },
-  loadingText: { color: C.textMuted, fontSize: 13 },
+  empty: { alignItems: 'center', paddingVertical: 48 },
+  emptyIcon: {
+    width: 64, height: 64, borderRadius: 16, backgroundColor: C.muted,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  emptyText: { color: C.textMuted, fontSize: 14 },
+  emptySubtext: { color: C.textMuted, fontSize: 12, marginTop: 4 },
   placeRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: C.card, borderRadius: 14, padding: 12,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -14,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  AI_SUGGESTIONS,
   ListItem,
   addNotification,
   addPlace as addPlaceToList,
@@ -22,6 +22,8 @@ import {
   getCurrentUser,
   getUserLists,
 } from '../../store';
+import { getSuggestions, Suggestion } from '../../suggestions';
+import { Skeleton } from '../../components/Skeleton';
 import { useAppTheme } from '../../context/ThemeContext';
 
 const LIST_COLORS = ['#4f8ef7', '#22d3a8', '#f7a84f', '#c47bf7', '#f75f5f', '#70d4f7'];
@@ -38,6 +40,8 @@ export default function ListsScreen() {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<Suggestion[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newEmoji, setNewEmoji] = useState('📍');
@@ -78,6 +82,19 @@ export default function ListsScreen() {
     reload();
   }
 
+  async function handleOpenAI() {
+    setShowAI(true);
+    setAiLoading(true);
+    try {
+      setAiSuggestions(userId ? await getSuggestions(userId) : []);
+    } catch {
+      Alert.alert('Erreur', 'Impossible de générer des suggestions.');
+      setAiSuggestions([]);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   const stats: { label: string; value: number; icon: IoniconName; color: string }[] = [
     { label: 'Listes', value: lists.length, icon: 'layers', color: C.primary },
     { label: 'Lieux', value: totalPlaces, icon: 'location', color: C.accent },
@@ -86,9 +103,38 @@ export default function ListsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.safe, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={C.primary} />
-      </View>
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <View>
+            <Skeleton style={{ width: 60, height: 12, marginBottom: 6 }} />
+            <Skeleton style={{ width: 140, height: 22 }} />
+          </View>
+          <Skeleton style={{ width: 38, height: 38, borderRadius: 10 }} />
+        </View>
+        <View style={styles.searchRow}>
+          <Skeleton style={{ flex: 1, height: 20, marginVertical: 11 }} />
+        </View>
+        <View style={styles.statsRow}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={styles.statCard}>
+              <Skeleton style={{ width: 16, height: 16, marginBottom: 8 }} />
+              <Skeleton style={{ width: 30, height: 20, marginBottom: 4 }} />
+              <Skeleton style={{ width: 40, height: 10 }} />
+            </View>
+          ))}
+        </View>
+        <View style={styles.section}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={styles.listCard}>
+              <Skeleton style={{ width: 48, height: 48, borderRadius: 12 }} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Skeleton style={{ width: '70%', height: 14 }} />
+                <Skeleton style={{ width: '50%', height: 11 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -101,7 +147,7 @@ export default function ListsScreen() {
             <Text style={styles.greeting}>Bonjour,</Text>
             <Text style={styles.username}>{username} 👋</Text>
           </View>
-          <TouchableOpacity onPress={() => setShowAI(true)} style={styles.aiBtn}>
+          <TouchableOpacity onPress={handleOpenAI} style={styles.aiBtn}>
             <Ionicons name="sparkles" size={18} color={C.accent} />
           </TouchableOpacity>
         </View>
@@ -298,7 +344,23 @@ export default function ListsScreen() {
             <Text style={[styles.fieldLabel, { marginBottom: 16 }]}>
               Basé sur vos listes, voici des lieux à explorer :
             </Text>
-            {AI_SUGGESTIONS.default.map((sug, i) => (
+            {aiLoading ? (
+              <View style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
+                <ActivityIndicator color={C.accent} />
+                <Text style={styles.emptySubtext}>Génération des suggestions…</Text>
+              </View>
+            ) : aiSuggestions.length === 0 ? (
+              <View style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="sparkles-outline" size={28} color={C.textMuted} />
+                </View>
+                <Text style={styles.emptyText}>Aucune suggestion pour l'instant</Text>
+                <Text style={styles.emptySubtext}>
+                  Sauvegardez quelques lieux dans vos listes pour en obtenir.
+                </Text>
+              </View>
+            ) : (
+            aiSuggestions.map((sug, i) => (
               <View key={i} style={styles.aiItem}>
                 <View style={styles.aiIcon}>
                   <Ionicons name="location" size={18} color={C.accent} />
@@ -339,7 +401,7 @@ export default function ListsScreen() {
                   <Text style={{ color: C.accent, fontSize: 12, fontWeight: '600' }}>+ Sauver</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+            )))}
           </Pressable>
         </Pressable>
       </Modal>

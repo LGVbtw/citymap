@@ -277,12 +277,3 @@ export async function initDemo(): Promise<void> {
   }
   await AsyncStorage.setItem(SEEDED_KEY, '1');
 }
-
-export const AI_SUGGESTIONS = {
-  default: [
-    { name: 'Septime', type: 'Restaurant', reason: 'Similaire à vos choix gastronomiques', rating: 4.8, price: 4, address: '80 Rue de Charonne, 75011 Paris', lat: 48.8527, lng: 2.3789 },
-    { name: 'Le Grand Véfour', type: 'Restaurant', reason: 'Restaurant historique parisien', rating: 4.7, price: 4, address: '17 Rue de Beaujolais, 75001 Paris', lat: 48.8636, lng: 2.3375 },
-    { name: 'Frenchie', type: 'Restaurant', reason: 'Bistronomie moderne très appréciée', rating: 4.6, price: 3, address: '5 Rue du Nil, 75002 Paris', lat: 48.8635, lng: 2.3488 },
-    { name: 'Ten Belles', type: 'Café', reason: 'Meilleur café de spécialité Paris', rating: 4.5, price: 1, address: '10 Rue de la Grange aux Belles, 75010 Paris', lat: 48.8706, lng: 2.3623 },
-  ],
-};

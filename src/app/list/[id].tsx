@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -18,7 +19,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import {
-  AI_SUGGESTIONS,
   ListItem,
   Place,
   addNotification,
@@ -30,6 +30,7 @@ import {
   updateList,
   updatePlace,
 } from '../../store';
+import { getSuggestionsForPlaces, Suggestion } from '../../suggestions';
 import { useAppTheme } from '../../context/ThemeContext';
 
 const PLACE_TYPES = [
@@ -65,6 +66,8 @@ export default function ListDetailScreen() {
   const [editPlace, setEditPlace] = useState<Place | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<Suggestion[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -162,6 +165,20 @@ export default function ListDetailScreen() {
     router.back();
   }
 
+  async function handleOpenAI() {
+    if (!list) return;
+    setShowAI(true);
+    setAiLoading(true);
+    try {
+      setAiSuggestions(await getSuggestionsForPlaces(list.places));
+    } catch {
+      Alert.alert('Erreur', 'Impossible de générer des suggestions.');
+      setAiSuggestions([]);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   async function togglePublic() {
     if (!list) return;
     await updateList(list.id, { isPublic: !list.isPublic });
@@ -209,7 +226,7 @@ export default function ListDetailScreen() {
               <Text style={[styles.actionBtnText, showMap && { color: 'white' }]}>Carte</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setShowAI(true)}
+              onPress={handleOpenAI}
               style={[styles.actionBtn, { backgroundColor: 'rgba(34,211,168,0.15)' }]}
             >
               <Ionicons name="sparkles" size={14} color={C.accent} />
@@ -598,7 +615,20 @@ export default function ListDetailScreen() {
             <Text style={[styles.fieldLabel, { marginBottom: 16 }]}>
               Lieux similaires à ajouter à "{list.title}" :
             </Text>
-            {AI_SUGGESTIONS.default.map((sug, i) => (
+            {aiLoading ? (
+              <View style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
+                <ActivityIndicator color={C.accent} />
+                <Text style={styles.emptyText}>Génération des suggestions…</Text>
+              </View>
+            ) : aiSuggestions.length === 0 ? (
+              <View style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="sparkles-outline" size={28} color={C.textMuted} />
+                </View>
+                <Text style={styles.emptyText}>Aucune suggestion pour l'instant</Text>
+              </View>
+            ) : (
+            aiSuggestions.map((sug, i) => (
               <View key={i} style={styles.aiItem}>
                 <View style={[styles.aiIcon, { backgroundColor: `${list.color}20` }]}>
                   <Ionicons name="location" size={16} color={list.color} />
@@ -624,7 +654,7 @@ export default function ListDetailScreen() {
                   <Text style={{ color: C.accent, fontSize: 12, fontWeight: '600' }}>+ Ajouter</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+            )))}
           </Pressable>
         </Pressable>
       </Modal>

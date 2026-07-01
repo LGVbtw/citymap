@@ -26,10 +26,16 @@ import {
   logout,
   updateUser,
 } from '../../store';
-import { useAppTheme } from '../../context/ThemeContext';
+import { ThemeMode, useAppTheme } from '../../context/ThemeContext';
 
 const NOTIF_PREFS_KEY = 'placelist_notif_prefs';
 const DEFAULT_NOTIF_PREFS = { share: true, invite: true, ai: true, reminder: false };
+
+const THEME_OPTIONS: { key: ThemeMode; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { key: 'light', label: 'Clair', icon: 'sunny' },
+  { key: 'dark', label: 'Sombre', icon: 'moon' },
+  { key: 'system', label: 'Système', icon: 'phone-portrait-outline' },
+];
 
 
 export default function ProfileScreen() {
@@ -48,7 +54,7 @@ export default function ProfileScreen() {
   const [pwError, setPwError] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState(DEFAULT_NOTIF_PREFS);
-  const { isLightTheme, toggleTheme, C } = useAppTheme();
+  const { themeMode, setThemeMode, C } = useAppTheme();
 
   useEffect(() => {
     (async () => {
@@ -255,20 +261,27 @@ export default function ProfileScreen() {
         {/* Apparence */}
         <Text style={styles.sectionLabel}>APPARENCE</Text>
         <View style={styles.settingsCard}>
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Thème de l'application</Text>
-              <Text style={styles.settingValue}>Thème clair</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="moon" size={16} color={!isLightTheme ? C.primary : C.muted} />
-              <Switch
-                value={isLightTheme}
-                onValueChange={toggleTheme}
-                trackColor={{ false: C.muted, true: C.primary }}
-                thumbColor="white"
-              />
-              <Ionicons name="sunny" size={18} color={isLightTheme ? '#f7a84f' : C.muted} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+            <Text style={styles.settingLabel}>Thème de l'application</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              {THEME_OPTIONS.map(opt => {
+                const active = themeMode === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    onPress={() => setThemeMode(opt.key)}
+                    style={[
+                      styles.themeOption,
+                      active && { backgroundColor: C.primary, borderColor: C.primary },
+                    ]}
+                  >
+                    <Ionicons name={opt.icon} size={16} color={active ? 'white' : C.textMuted} />
+                    <Text style={[styles.themeOptionText, active && { color: 'white' }]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -395,6 +408,12 @@ const getStyles = (C: any) => StyleSheet.create({
   },
   settingLabel: { fontSize: 12, color: C.textMuted },
   settingValue: { fontSize: 15, color: C.text, fontWeight: '500', marginTop: 1 },
+  themeOption: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 10,
+    backgroundColor: C.muted, borderWidth: 1, borderColor: C.border,
+  },
+  themeOptionText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
   editBtn: { padding: 4 },
   inlineInput: {
     backgroundColor: C.muted,

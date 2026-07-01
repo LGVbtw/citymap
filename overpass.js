@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 const CACHE_KEY = 'overpass_cache_serris';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -11,6 +12,17 @@ async function getCached() {
     const { timestamp, elements } = JSON.parse(raw);
     if (Date.now() - timestamp > CACHE_TTL_MS) return null;
     return elements;
+  } catch {
+    return null;
+  }
+}
+
+// Cache sans limite d'age, utilise seulement en secours hors-ligne.
+async function getCachedIgnoringTTL() {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw).elements ?? null;
   } catch {
     return null;
   }
@@ -103,6 +115,13 @@ export const fetchPlacesAround = async (lat, lon, radius = 1000) => {
 
   const cached = await getCached();
   if (cached) return cached;
+
+  const netState = await NetInfo.fetch();
+  if (!netState.isConnected) {
+    const stale = await getCachedIgnoringTTL();
+    if (stale) return stale;
+    throw new Error('Hors ligne et aucune donnee en cache.');
+  }
 
   try {
     const response = await postOverpassQuery(buildSerrisPlacesQuery());
