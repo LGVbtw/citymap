@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import {
   Alert,
@@ -30,18 +30,7 @@ import {
   updateList,
   updatePlace,
 } from '../../store';
-
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
+import { useAppTheme } from '../../context/ThemeContext';
 
 const PLACE_TYPES = [
   'Restaurant', 'Café', 'Bar', 'Hôtel', 'Musée',
@@ -54,11 +43,11 @@ const EMPTY_FORM = {
   address: '', rating: 4.0, imageUrl: '',
 };
 
-function PriceTag({ price, color }: { price: number; color: string }) {
+function PriceTag({ price, color, textMuted }: { price: number; color: string; textMuted: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4].map(i => (
-        <Text key={i} style={{ fontSize: 11, color: i <= price ? '#f7a84f' : C.textMuted, opacity: i <= price ? 1 : 0.3 }}>
+        <Text key={i} style={{ fontSize: 11, color: i <= price ? '#f7a84f' : textMuted, opacity: i <= price ? 1 : 0.3 }}>
           €
         </Text>
       ))}
@@ -82,6 +71,24 @@ export default function ListDetailScreen() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pickedCoord, setPickedCoord] = useState<{ latitude: number; longitude: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const { isLightTheme, C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const mapRef = useRef<MapView>(null);
+
+  const handlePlacePress = useCallback((place: any) => {
+    setShowMap(true);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    setTimeout(() => {
+      mapRef.current?.animateToRegion({
+        latitude: place.latitude,
+        longitude: place.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }, showMap ? 50 : 300);
+  }, [showMap]);
 
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
@@ -176,7 +183,7 @@ export default function ListDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: `${list.color}12` }]}>
           <View style={styles.headerTop}>
@@ -222,7 +229,9 @@ export default function ListDetailScreen() {
         {showMap && list.places.length > 0 && (
           <View style={styles.mapContainer}>
             <MapView
+              ref={mapRef}
               style={styles.map}
+              userInterfaceStyle={isLightTheme ? "light" : "dark"}
               region={{
                 latitude: mapLat,
                 longitude: mapLng,
@@ -274,7 +283,12 @@ export default function ListDetailScreen() {
           )}
 
           {list.places.map(place => (
-            <View key={place.id} style={styles.placeCard}>
+            <TouchableOpacity 
+              key={place.id} 
+              style={styles.placeCard}
+              activeOpacity={0.8}
+              onPress={() => handlePlacePress(place)}
+            >
               {!!place.imageUrl && (
                 <View style={styles.placeImageWrap}>
                   <Image
@@ -302,7 +316,7 @@ export default function ListDetailScreen() {
                   <View style={[styles.placeTypeBadge, { backgroundColor: `${list.color}20` }]}>
                     <Text style={[styles.placeTypeText, { color: list.color }]}>{place.type}</Text>
                   </View>
-                  <PriceTag price={place.price} color={list.color} />
+                  <PriceTag price={place.price} color={list.color} textMuted={C.textMuted} />
                   {!!place.rating && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Ionicons name="star" size={11} color="#f7a84f" />
@@ -340,7 +354,7 @@ export default function ListDetailScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
 
           {/* Danger zone */}
@@ -673,6 +687,7 @@ export default function ListDetailScreen() {
 
           <MapView
             style={{ flex: 1 }}
+            userInterfaceStyle={isLightTheme ? "light" : "dark"}
             initialRegion={{
               latitude: form.latitude || 48.854,
               longitude: form.longitude || 2.333,
@@ -769,7 +784,7 @@ export default function ListDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },
   headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },

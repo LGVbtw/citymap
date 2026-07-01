@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,18 +25,7 @@ import {
   getCurrentUser,
   getUserLists,
 } from '../../store';
-
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
+import { useAppTheme } from '../../context/ThemeContext';
 
 const DEFAULT_COORDS = { latitude: 48.852, longitude: 2.782 };
 const DEFAULT_REGION = { ...DEFAULT_COORDS, latitudeDelta: 0.04, longitudeDelta: 0.04 };
@@ -68,8 +57,8 @@ const TYPE_ICON: Record<string, string> = {
   shop: 'bag-handle-outline',
 };
 
-function typeColor(type: string) {
-  return TYPE_COLOR[type.toLowerCase()] ?? C.primary;
+function typeColor(type: string, fallback: string) {
+  return TYPE_COLOR[type.toLowerCase()] ?? fallback;
 }
 
 function typeIcon(type: string): any {
@@ -141,6 +130,24 @@ export default function MapScreen() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { isLightTheme, C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const mapRef = useRef<MapView>(null);
+
+  const handlePlacePress = useCallback((place: any) => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    setSelectedPlace(place);
+    setTimeout(() => {
+      mapRef.current?.animateToRegion({
+        latitude: place.coordinate.latitude,
+        longitude: place.coordinate.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }, 50);
+  }, []);
 
   const isBooting = !dbReady || loadingPlaces;
 
@@ -249,18 +256,19 @@ export default function MapScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
         {/* Map card */}
         <View style={styles.mapCard}>
           <MapView
+            ref={mapRef}
             style={styles.map}
             initialRegion={DEFAULT_REGION}
-            userInterfaceStyle="dark"
-            customMapStyle={DARK_MAP_STYLE}
+            userInterfaceStyle={isLightTheme ? "light" : "dark"}
+            customMapStyle={isLightTheme ? [] : DARK_MAP_STYLE}
           >
-            {places.map(place => {
+            {displayed.map(place => {
               const key = `${place.osmType}-${place.osmId}`;
-              const color = typeColor(place.displayType);
+              const color = typeColor(place.displayType, C.primary);
               return (
                 <Marker
                   key={key}
@@ -302,7 +310,7 @@ export default function MapScreen() {
               <Text style={[styles.chipText, !activeFilter && { color: 'white' }]}>Tous</Text>
             </TouchableOpacity>
             {types.map(t => {
-              const color = typeColor(t);
+              const color = typeColor(t, C.primary);
               const active = activeFilter === t;
               return (
                 <TouchableOpacity
@@ -340,10 +348,15 @@ export default function MapScreen() {
           ) : (
             displayed.map(place => {
               const key = `${place.osmType}-${place.osmId}`;
-              const color = typeColor(place.displayType);
+              const color = typeColor(place.displayType, C.primary);
               const saving = savingKey === key;
               return (
-                <View key={key} style={styles.placeRow}>
+                <TouchableOpacity 
+                  key={key} 
+                  style={styles.placeRow}
+                  activeOpacity={0.7}
+                  onPress={() => handlePlacePress(place)}
+                >
                   <View style={[styles.placeIconWrap, { backgroundColor: `${color}18` }]}>
                     <Ionicons name={typeIcon(place.displayType)} size={18} color={color} />
                   </View>
@@ -366,7 +379,7 @@ export default function MapScreen() {
                       <Ionicons name="bookmark-outline" size={16} color="white" />
                     )}
                   </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               );
             })
           )}
@@ -385,12 +398,12 @@ export default function MapScreen() {
           <MapView
             style={StyleSheet.absoluteFillObject}
             initialRegion={DEFAULT_REGION}
-            userInterfaceStyle="dark"
-            customMapStyle={DARK_MAP_STYLE}
+            userInterfaceStyle={isLightTheme ? "light" : "dark"}
+            customMapStyle={isLightTheme ? [] : DARK_MAP_STYLE}
           >
-            {places.map(place => {
+            {displayed.map(place => {
               const key = `${place.osmType}-${place.osmId}`;
-              const color = typeColor(place.displayType);
+              const color = typeColor(place.displayType, C.primary);
               return (
                 <Marker
                   key={key}
@@ -423,7 +436,7 @@ export default function MapScreen() {
         <Pressable style={styles.overlay} onPress={() => setSelectedPlace(null)}>
           <Pressable style={styles.sheet} onPress={e => e.stopPropagation()}>
             {selectedPlace && (() => {
-              const color = typeColor(selectedPlace.displayType);
+              const color = typeColor(selectedPlace.displayType, C.primary);
               const key = `${selectedPlace.osmType}-${selectedPlace.osmId}`;
               const saving = savingKey === key;
               return (
@@ -483,7 +496,7 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

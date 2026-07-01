@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -14,18 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { login, register } from '../store';
-
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
+import { useAppTheme } from '../context/ThemeContext';
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -36,6 +25,8 @@ export default function AuthScreen() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
 
   const cardY = useRef(new Animated.Value(60)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -201,7 +192,7 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: { alignItems: 'center', paddingTop: 52, paddingBottom: 32 },
   logo: {
@@ -228,7 +219,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   fieldLabel: { fontSize: 12, color: C.textMuted, marginBottom: 6 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.muted,
     borderWidth: 1, borderColor: C.border,
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
     color: C.text, fontSize: 14,

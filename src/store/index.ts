@@ -72,7 +72,14 @@ async function setJSON<T>(key: string, value: T): Promise<void> {
 }
 
 export async function getLists(): Promise<ListItem[]> {
-  return getJSON<ListItem[]>(LISTS_KEY, []);
+  const lists = await getJSON<ListItem[]>(LISTS_KEY, []);
+  // Purge old demo lists to satisfy the user's request
+  if (lists.some(l => l.title === 'Paris Foodie 🇫🇷' || l.title === 'Tokyo Must-See 🇯🇵')) {
+    const cleanedLists = lists.filter(l => l.title !== 'Paris Foodie 🇫🇷' && l.title !== 'Tokyo Must-See 🇯🇵' && l.title !== 'Activités Weekend');
+    await setJSON(LISTS_KEY, cleanedLists);
+    return cleanedLists;
+  }
+  return lists;
 }
 
 export async function getNotifs(userId: string): Promise<Notification[]> {
@@ -244,86 +251,11 @@ export async function deleteNotif(notifId: string): Promise<void> {
 }
 
 async function seedDemoData(userId: string, username: string): Promise<void> {
-  const list1 = await createList(userId, 'Paris Foodie 🇫🇷', 'Mes restaurants préférés à Paris', '🍽️', '#4f8ef7');
-  await addPlace(list1.id, {
-    name: 'Le Comptoir du Relais',
-    notes: 'Bistrot parisien authentique, réservation indispensable',
-    type: 'Restaurant', price: 3,
-    googleMapsLink: 'https://maps.google.com/?q=Le+Comptoir+du+Relais+Paris',
-    latitude: 48.8534, longitude: 2.3388,
-    address: "9 Carrefour de l'Odéon, 75006 Paris",
-    rating: 4.7,
-    imageUrl: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop&auto=format',
-  });
-  await addPlace(list1.id, {
-    name: 'Brasserie Lipp',
-    notes: 'Brasserie historique de Saint-Germain, ambiance incroyable',
-    type: 'Restaurant', price: 3,
-    googleMapsLink: 'https://maps.google.com/?q=Brasserie+Lipp+Paris',
-    latitude: 48.8543, longitude: 2.3333,
-    address: '151 Bd Saint-Germain, 75006 Paris',
-    rating: 4.5,
-    imageUrl: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=400&h=300&fit=crop&auto=format',
-  });
-  await addPlace(list1.id, {
-    name: 'Café de Flore',
-    notes: 'Café littéraire iconique, petit déjeuner incontournable',
-    type: 'Café', price: 2,
-    googleMapsLink: 'https://maps.google.com/?q=Café+de+Flore+Paris',
-    latitude: 48.854, longitude: 2.3326,
-    address: '172 Bd Saint-Germain, 75006 Paris',
-    rating: 4.3,
-    imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop&auto=format',
-  });
-
-  const list2 = await createList(userId, 'Tokyo Must-See 🇯🇵', 'Endroits incontournables pour mon voyage', '✈️', '#22d3a8');
-  await addPlace(list2.id, {
-    name: 'Tsukiji Outer Market',
-    notes: 'Marché aux poissons, sushis du matin absolument frais',
-    type: 'Marché', price: 2,
-    googleMapsLink: 'https://maps.google.com/?q=Tsukiji+Market+Tokyo',
-    latitude: 35.6655, longitude: 139.7707,
-    address: '4 Chome-16-2 Tsukiji, Chuo City, Tokyo',
-    rating: 4.8,
-    imageUrl: 'https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=300&fit=crop&auto=format',
-  });
-  await addPlace(list2.id, {
-    name: 'Shinjuku Gyoen',
-    notes: 'Jardin national magnifique, parfait pour les cerisiers',
-    type: 'Parc', price: 1,
-    googleMapsLink: 'https://maps.google.com/?q=Shinjuku+Gyoen+Tokyo',
-    latitude: 35.6851, longitude: 139.71,
-    address: 'Naitomachi, Shinjuku City, Tokyo',
-    rating: 4.7,
-    imageUrl: 'https://images.unsplash.com/photo-1522383225753-aa31f9f1d2f4?w=400&h=300&fit=crop&auto=format',
-  });
-
-  const list3 = await createList(userId, 'Activités Weekend', 'Activités cool à faire le weekend', '🎯', '#c47bf7');
-  await addPlace(list3.id, {
-    name: "Musée d'Orsay",
-    notes: 'Collection impressionniste incomparable',
-    type: 'Musée', price: 2,
-    googleMapsLink: "https://maps.google.com/?q=Musée+d+Orsay+Paris",
-    latitude: 48.86, longitude: 2.3266,
-    address: "1 Rue de la Légion d'Honneur, 75007 Paris",
-    rating: 4.9,
-    imageUrl: 'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400&h=300&fit=crop&auto=format',
-  });
-
+  await createList(userId, 'Favoris', 'Mes lieux sauvegardés', '⭐', '#f7a84f');
   await addNotification({
     userId, title: 'Bienvenue sur PlaceList ! 👋',
-    message: `Bonjour ${username} ! Explorez vos listes, ajoutez des lieux et partagez avec vos amis.`,
+    message: `Bonjour ${username} ! Explorez la carte et sauvegardez des lieux dans vos listes.`,
     type: 'ai', isRead: false,
-  });
-  await addNotification({
-    userId, title: 'Suggestion IA 🤖',
-    message: 'Basé sur vos restaurants parisiens, essayez : Le Grand Véfour et Septime.',
-    type: 'ai', isRead: false,
-  });
-  await addNotification({
-    userId, title: 'Sophie a partagé une liste',
-    message: 'Sophie vous invite à collaborer sur "Barcelone 2024"',
-    type: 'invite', isRead: false,
   });
 }
 

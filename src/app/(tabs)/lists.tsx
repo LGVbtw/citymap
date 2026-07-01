@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -22,18 +22,7 @@ import {
   getCurrentUser,
   getUserLists,
 } from '../../store';
-
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
+import { useAppTheme } from '../../context/ThemeContext';
 
 const LIST_COLORS = ['#4f8ef7', '#22d3a8', '#f7a84f', '#c47bf7', '#f75f5f', '#70d4f7'];
 const LIST_EMOJIS = ['📍', '🍽️', '✈️', '🏖️', '🎯', '🛍️', '🎭', '🌿', '🍷', '🏔️', '🏛️', '🌆'];
@@ -53,6 +42,8 @@ export default function ListsScreen() {
   const [newDesc, setNewDesc] = useState('');
   const [newEmoji, setNewEmoji] = useState('📍');
   const [newColor, setNewColor] = useState('#4f8ef7');
+  const { C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
 
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
@@ -356,7 +347,7 @@ export default function ListsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
@@ -372,7 +363,7 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.muted,
     borderRadius: 12, borderWidth: 1, borderColor: C.border,
     paddingHorizontal: 12,
   },
@@ -443,7 +434,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   fieldLabel: { fontSize: 12, color: C.textMuted, marginBottom: 6 },
   fieldInput: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.muted,
     borderWidth: 1, borderColor: C.border,
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
     color: C.text, fontSize: 14,

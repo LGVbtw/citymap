@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Alert,
   Modal,
@@ -10,11 +10,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import {
   User,
   addNotification,
@@ -24,21 +26,11 @@ import {
   logout,
   updateUser,
 } from '../../store';
+import { useAppTheme } from '../../context/ThemeContext';
 
 const NOTIF_PREFS_KEY = 'placelist_notif_prefs';
 const DEFAULT_NOTIF_PREFS = { share: true, invite: true, ai: true, reminder: false };
 
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -56,6 +48,7 @@ export default function ProfileScreen() {
   const [pwError, setPwError] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState(DEFAULT_NOTIF_PREFS);
+  const { isLightTheme, toggleTheme, C } = useAppTheme();
 
   useEffect(() => {
     (async () => {
@@ -71,6 +64,25 @@ export default function ProfileScreen() {
       if (stored) setNotifPrefs({ ...DEFAULT_NOTIF_PREFS, ...JSON.parse(stored) });
     })();
   }, []);
+
+  async function handlePickAvatar() {
+    if (!user) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const base64Str = asset.base64 ? `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}` : asset.uri;
+      await updateUser(user.id, { avatar: base64Str });
+      const updated = await getCurrentUser();
+      setUser(updated);
+    }
+  }
 
   async function handleSaveUsername() {
     if (!user || !newUsername.trim() || newUsername.trim().length < 3) return;
@@ -103,15 +115,25 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const initials = user.username.slice(0, 2).toUpperCase();
+  const styles = useMemo(() => getStyles(C), [C]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile header */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          <TouchableOpacity onPress={handlePickAvatar} style={{ position: 'relative' }}>
+            <View style={styles.avatar}>
+              {user.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarText}>{initials}</Text>
+              )}
+            </View>
+            <View style={styles.avatarBadge}>
+              <Ionicons name="camera" size={12} color="white" />
+            </View>
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.username}>{user.username}</Text>
             {!!user.email && <Text style={styles.email}>{user.email}</Text>}
@@ -230,6 +252,27 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Apparence */}
+        <Text style={styles.sectionLabel}>APPARENCE</Text>
+        <View style={styles.settingsCard}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Thème de l'application</Text>
+              <Text style={styles.settingValue}>Thème clair</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="moon" size={16} color={!isLightTheme ? C.primary : C.muted} />
+              <Switch
+                value={isLightTheme}
+                onValueChange={toggleTheme}
+                trackColor={{ false: C.muted, true: C.primary }}
+                thumbColor="white"
+              />
+              <Ionicons name="sunny" size={18} color={isLightTheme ? '#f7a84f' : C.muted} />
+            </View>
+          </View>
+        </View>
+
         {/* Notifications */}
         <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
         <View style={styles.settingsCard}>
@@ -308,18 +351,25 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20,
   },
   avatar: {
-    width: 72, height: 72, borderRadius: 18,
+    width: 72, height: 72, borderRadius: 36,
     backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: 26, fontWeight: '700', color: 'white' },
-  username: { fontSize: 20, fontWeight: '700', color: C.text },
+  avatarText: { fontSize: 24, fontWeight: '700', color: 'white' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 36 },
+  avatarBadge: {
+    position: 'absolute', bottom: -4, right: -4,
+    backgroundColor: C.primary, width: 24, height: 24,
+    borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: C.card,
+  },
+  username: { fontSize: 22, fontWeight: '700', color: C.text, letterSpacing: -0.4 },
   email: { fontSize: 13, color: C.textMuted, marginTop: 2 },
   bio: { fontSize: 12, color: C.textMuted, marginTop: 4 },
   statsRow: { flexDirection: 'row', gap: 12, marginHorizontal: 16, marginBottom: 24 },
@@ -347,7 +397,7 @@ const styles = StyleSheet.create({
   settingValue: { fontSize: 15, color: C.text, fontWeight: '500', marginTop: 1 },
   editBtn: { padding: 4 },
   inlineInput: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.muted,
     borderWidth: 1, borderColor: C.border,
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
     color: C.text, fontSize: 14,

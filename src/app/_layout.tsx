@@ -2,12 +2,14 @@ import { Stack, useRouter, useRootNavigationState, useSegments } from 'expo-rout
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { getCurrentUser, initDemo } from '../store';
+import { ThemeProvider, useAppTheme } from '../context/ThemeContext';
 
-export default function RootLayout() {
+function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
   const navState = useRootNavigationState();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const { C } = useAppTheme();
 
   // Load store + check session once on mount
   useEffect(() => {
@@ -26,8 +28,16 @@ export default function RootLayout() {
   }, [authed, navState?.key]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0C0C14' }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Stack screenOptions={{ headerShown: false }} />
     </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutNav />
+    </ThemeProvider>
   );
 }

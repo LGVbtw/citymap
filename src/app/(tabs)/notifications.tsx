@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -17,18 +17,7 @@ import {
   markAllNotifsRead,
   markNotifRead,
 } from '../../store';
-
-const C = {
-  bg: '#0C0C14',
-  card: '#13131E',
-  border: 'rgba(255,255,255,0.07)',
-  primary: '#4F8EF7',
-  accent: '#22D3A8',
-  text: '#FFFFFF',
-  textMuted: '#6B7489',
-  muted: 'rgba(255,255,255,0.05)',
-  destructive: '#F75F5F',
-};
+import { useAppTheme } from '../../context/ThemeContext';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -59,6 +48,8 @@ export default function NotificationsScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const { C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
 
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
@@ -207,7 +198,7 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (C: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
