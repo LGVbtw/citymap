@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { getCurrentUser, initDemo } from '../store';
 import { ThemeProvider, useAppTheme } from '../context/ThemeContext';
 
+// Gère la redirection automatique vers /auth ou /map selon la session
 function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
@@ -34,6 +35,7 @@ function RootLayoutNav() {
   );
 }
 
+// Point d'entrée de l'app : englobe tout dans le ThemeProvider
 export default function RootLayout() {
   return (
     <ThemeProvider>

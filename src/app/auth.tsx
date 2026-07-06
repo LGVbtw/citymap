@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { login, register } from '../store';
 import { useAppTheme } from '../context/ThemeContext';
 
+// Écran de connexion / inscription
 export default function AuthScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -32,6 +33,7 @@ export default function AuthScreen() {
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0)).current;
 
+  // Animation d'entrée du logo et de la carte
   useEffect(() => {
     Animated.parallel([
       Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 150, friction: 8 }),
@@ -40,6 +42,7 @@ export default function AuthScreen() {
     ]).start();
   }, []);
 
+  // Valide le formulaire puis connecte ou inscrit l'utilisateur
   async function handleSubmit() {
     setError('');
     setLoading(true);

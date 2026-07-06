@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, ViewStyle } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 
+// Placeholder animé (pulsation) affiché pendant le chargement
 export function Skeleton({ style }: { style?: ViewStyle | ViewStyle[] }) {
   const opacity = useRef(new Animated.Value(0.4)).current;
   const { C } = useAppTheme();

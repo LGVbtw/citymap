@@ -28,9 +28,11 @@ import {
 } from '../../store';
 import { ThemeMode, useAppTheme } from '../../context/ThemeContext';
 
+// Clé AsyncStorage pour les préférences de notifications
 const NOTIF_PREFS_KEY = 'placelist_notif_prefs';
 const DEFAULT_NOTIF_PREFS = { share: true, invite: true, ai: true, reminder: false };
 
+// Options affichées dans le sélecteur de thème
 const THEME_OPTIONS: { key: ThemeMode; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
   { key: 'light', label: 'Clair', icon: 'sunny' },
   { key: 'dark', label: 'Sombre', icon: 'moon' },
@@ -38,6 +40,7 @@ const THEME_OPTIONS: { key: ThemeMode; label: string; icon: React.ComponentProps
 ];
 
 
+// Écran "Profil" : compte, apparence, notifications, déconnexion
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -56,6 +59,7 @@ export default function ProfileScreen() {
   const [notifPrefs, setNotifPrefs] = useState(DEFAULT_NOTIF_PREFS);
   const { themeMode, setThemeMode, C } = useAppTheme();
 
+  // Charge le profil, les stats de listes et les préférences de notifs
   useEffect(() => {
     (async () => {
       const u = await getCurrentUser();
@@ -71,6 +75,7 @@ export default function ProfileScreen() {
     })();
   }, []);
 
+  // Ouvre la galerie et enregistre la photo choisie comme avatar (en base64)
   async function handlePickAvatar() {
     if (!user) return;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -90,6 +95,7 @@ export default function ProfileScreen() {
     }
   }
 
+  // Sauvegarde le nouveau nom d'utilisateur
   async function handleSaveUsername() {
     if (!user || !newUsername.trim() || newUsername.trim().length < 3) return;
     await updateUser(user.id, { username: newUsername.trim() });
@@ -100,6 +106,7 @@ export default function ProfileScreen() {
     setTimeout(() => setUsernameOk(false), 2500);
   }
 
+  // Valide et sauvegarde le nouveau mot de passe
   async function handleSavePw() {
     setPwError('');
     if (newPw.length < 6) { setPwError('Min. 6 caractères'); return; }
@@ -113,6 +120,7 @@ export default function ProfileScreen() {
     setTimeout(() => setPwOk(false), 2500);
   }
 
+  // Déconnecte l'utilisateur et retourne à l'écran d'authentification
   async function handleLogout() {
     await logout();
     router.replace('/auth');

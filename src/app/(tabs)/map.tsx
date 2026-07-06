@@ -29,6 +29,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 const DEFAULT_COORDS = { latitude: 48.852, longitude: 2.782 };
 const DEFAULT_REGION = { ...DEFAULT_COORDS, latitudeDelta: 0.04, longitudeDelta: 0.04 };
 
+// Couleur associée à chaque type de lieu OSM
 const TYPE_COLOR: Record<string, string> = {
   restaurant: '#f7a84f',
   cafe: '#c47bf7',
@@ -42,6 +43,7 @@ const TYPE_COLOR: Record<string, string> = {
   shop: '#c47bf7',
 };
 
+// Icône Ionicons associée à chaque type de lieu OSM
 const TYPE_ICON: Record<string, string> = {
   restaurant: 'restaurant-outline',
   cafe: 'cafe-outline',
@@ -55,10 +57,12 @@ const TYPE_ICON: Record<string, string> = {
   shop: 'bag-handle-outline',
 };
 
+// Couleur d'un type de lieu, avec une couleur de secours si inconnu
 function typeColor(type: string, fallback: string) {
   return TYPE_COLOR[type.toLowerCase()] ?? fallback;
 }
 
+// Icône d'un type de lieu, avec une icône de secours si inconnu
 function typeIcon(type: string): any {
   return TYPE_ICON[type.toLowerCase()] ?? 'location-outline';
 }
@@ -94,6 +98,7 @@ function getPlaceCoordinate(place: any) {
   return getGeometryCenter(place.geometry);
 }
 
+// Transforme un élément Overpass brut en lieu affichable sur la carte
 function normalizePlace(place: any) {
   const coordinate = getPlaceCoordinate(place);
   if (!coordinate) return null;
@@ -119,6 +124,7 @@ const DARK_MAP_STYLE = [
   { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2d2d44' }] },
 ];
 
+// Écran d'accueil : carte + liste des lieux à proximité
 export default function MapScreen() {
   const [places, setPlaces] = useState<any[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(true);
@@ -136,6 +142,7 @@ export default function MapScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const mapRef = useRef<MapView>(null);
 
+  // Sélectionne un lieu : scrolle en haut et centre la carte dessus
   const handlePlacePress = useCallback((place: any) => {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
     setSelectedPlace(place);
@@ -151,6 +158,7 @@ export default function MapScreen() {
 
   const isBooting = loadingPlaces;
 
+  // Surveille la connexion réseau pour afficher le bandeau hors-ligne
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsOffline(!state.isConnected);
@@ -158,6 +166,7 @@ export default function MapScreen() {
     return unsubscribe;
   }, []);
 
+  // Charge les lieux Overpass autour de Serris au montage de l'écran
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -173,6 +182,7 @@ export default function MapScreen() {
     return () => { mounted = false; };
   }, []);
 
+  // Ouvre la modale de choix de liste pour un lieu donné
   async function openListPicker(place: any) {
     try {
       const user = await getCurrentUser();
@@ -188,6 +198,7 @@ export default function MapScreen() {
     }
   }
 
+  // Ajoute le lieu sélectionné dans la liste choisie par l'utilisateur
   async function handleAddToList(list: ListItem) {
     if (!pickerPlace) return;
     const key = `${pickerPlace.osmType}-${pickerPlace.osmId}`;
@@ -219,6 +230,7 @@ export default function MapScreen() {
     }
   }
 
+  // Crée une nouvelle liste à la volée puis y ajoute le lieu sélectionné
   async function handleCreateListAndAdd() {
     const title = newListTitle.trim();
     if (!title || !pickerPlace) return;

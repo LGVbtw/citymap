@@ -1,56 +1,71 @@
-# Welcome to your Expo app 👋
+# CityMap
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile (React Native / Expo) permettant d'explorer les lieux autour de Serris sur une carte, de les sauvegarder dans des listes personnalisées, de recevoir des suggestions de lieux similaires, et de gérer son profil.
 
-## Get started
+Projet réalisé dans le cadre du B3 DEV Mobile (Ynov).
 
-1. Install dependencies
+## Prérequis
+
+- [Node.js](https://nodejs.org/) 20 LTS ou supérieur
+- npm (fourni avec Node.js)
+- L'application [Expo Go](https://expo.dev/go) sur un téléphone Android/iOS **ou** un émulateur configuré :
+  - Android : [Android Studio](https://docs.expo.dev/workflow/android-studio-emulator/) + un émulateur
+  - iOS (Mac uniquement) : Xcode + le simulateur iOS
+- Une connexion internet (l'app récupère les lieux via l'API [Overpass](https://overpass-api.de/) et les cartes via react-native-maps)
+
+## Installation
+
+1. Cloner le dépôt puis installer les dépendances :
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Lancer le serveur de développement Expo :
 
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+3. Dans le terminal qui s'ouvre, choisir comment lancer l'app :
+   - Scanner le QR code avec l'app **Expo Go** (téléphone Android ou iOS)
+   - Appuyer sur `a` pour l'émulateur Android
+   - Appuyer sur `i` pour le simulateur iOS (Mac uniquement)
+   - Appuyer sur `w` pour lancer la version web dans le navigateur
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   Ou directement une plateforme précise :
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+   ```bash
+   npm run android
+   npm run ios
+   npm run web
+   ```
 
-## Get a fresh project
+## Se connecter
 
-When you're ready, run:
+Au premier lancement, un compte de démonstration est créé automatiquement :
 
-```bash
-npm run reset-project
-```
+- **Utilisateur** : `demo`
+- **Mot de passe** : `demo123`
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Un raccourci "Utiliser le compte démo" est aussi disponible sur l'écran de connexion. Vous pouvez également créer votre propre compte via l'onglet Inscription.
 
-### Other setup steps
+## Fonctionnement
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- **Aucun backend** : toutes les données (comptes, listes, lieux, notifications) sont stockées localement sur l'appareil via `AsyncStorage`. Désinstaller l'app ou vider son cache efface les données.
+- **Carte (`Carte`)** : charge les lieux d'intérêt autour de Serris depuis l'API Overpass (mis en cache 24h) et permet de les ajouter à une ou plusieurs listes.
+- **Listes (`Listes`)** : création/gestion de listes de lieux, partage (lien copié dans le presse-papiers), suggestions IA basées sur les lieux déjà sauvegardés.
+- **Alertes (`Alertes`)** : notifications liées aux actions de l'app (ajouts, partages, suggestions).
+- **Profil (`Profil`)** : gestion du compte, thème clair/sombre/système, préférences de notifications.
 
-## Learn more
+## Limitation connue
 
-To learn more about developing your project with Expo, look at the following resources:
+Aucune clé Google Maps n'est configurée dans `app.json`. Sur Android, l'affichage de la carte peut nécessiter l'ajout d'une clé API Google Maps (`app.json` → `android.config.googleMaps.apiKey`) selon l'environnement d'exécution.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Stack technique
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo](https://expo.dev) 54 + [Expo Router](https://docs.expo.dev/router/introduction/) (navigation par fichiers, dossier `src/app/`)
+- React Native + TypeScript
+- `react-native-maps` pour l'affichage cartographique
+- `@react-native-async-storage/async-storage` pour le stockage local
+- API [Overpass](https://overpass-api.de/) (OpenStreetMap) pour les données de lieux

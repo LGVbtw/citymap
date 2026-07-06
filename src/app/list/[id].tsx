@@ -33,17 +33,20 @@ import {
 import { getSuggestionsForPlaces, Suggestion } from '../../suggestions';
 import { useAppTheme } from '../../context/ThemeContext';
 
+// Types de lieu proposés dans le formulaire d'ajout
 const PLACE_TYPES = [
   'Restaurant', 'Café', 'Bar', 'Hôtel', 'Musée',
   'Parc', 'Marché', 'Shopping', 'Activité', 'Transport', 'Autre',
 ];
 
+// Valeurs par défaut du formulaire d'ajout/modification de lieu
 const EMPTY_FORM = {
   name: '', notes: '', type: 'Restaurant', price: 2,
   googleMapsLink: '', latitude: 48.854, longitude: 2.333,
   address: '', rating: 4.0, imageUrl: '',
 };
 
+// Affiche le niveau de prix (€ à €€€€)
 function PriceTag({ price, color, textMuted }: { price: number; color: string; textMuted: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -56,6 +59,7 @@ function PriceTag({ price, color, textMuted }: { price: number; color: string; t
   );
 }
 
+// Écran détail d'une liste : ses lieux, la carte, le partage et les suggestions IA
 export default function ListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -80,6 +84,7 @@ export default function ListDetailScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const mapRef = useRef<MapView>(null);
 
+  // Affiche la carte et la centre sur le lieu sélectionné
   const handlePlacePress = useCallback((place: any) => {
     setShowMap(true);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -93,6 +98,7 @@ export default function ListDetailScreen() {
     }, showMap ? 50 : 300);
   }, [showMap]);
 
+  // Recharge la liste courante depuis le store
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user) { router.replace('/auth'); return; }
@@ -104,6 +110,7 @@ export default function ListDetailScreen() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Pré-remplit le formulaire pour modifier un lieu existant
   function openEdit(place: Place) {
     setEditPlace(place);
     setForm({
@@ -116,6 +123,7 @@ export default function ListDetailScreen() {
     setShowAddPlace(true);
   }
 
+  // Crée ou met à jour le lieu selon le formulaire
   async function handleSavePlace() {
     if (!list || !form.name.trim()) return;
     if (editPlace) {
@@ -129,6 +137,7 @@ export default function ListDetailScreen() {
     reload();
   }
 
+  // Demande confirmation puis supprime un lieu de la liste
   function handleDeletePlace(placeId: string) {
     if (!list) return;
     const place = list.places.find(p => p.id === placeId);
@@ -145,6 +154,7 @@ export default function ListDetailScreen() {
     );
   }
 
+  // Copie le lien de partage et notifie l'utilisateur
   async function handleShare() {
     if (!list || !userId) return;
     await Clipboard.setStringAsync(list.shareLink);
@@ -159,12 +169,14 @@ export default function ListDetailScreen() {
     });
   }
 
+  // Supprime définitivement la liste et revient en arrière
   async function handleDeleteList() {
     if (!list) return;
     await deleteList(list.id);
     router.back();
   }
 
+  // Ouvre la modale IA et génère des suggestions basées sur cette liste
   async function handleOpenAI() {
     if (!list) return;
     setShowAI(true);
@@ -179,6 +191,7 @@ export default function ListDetailScreen() {
     }
   }
 
+  // Bascule la liste entre publique et privée
   async function togglePublic() {
     if (!list) return;
     await updateList(list.id, { isPublic: !list.isPublic });

@@ -5,6 +5,7 @@ import NetInfo from '@react-native-community/netinfo';
 const CACHE_KEY = 'overpass_cache_serris';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Lit le cache s'il existe et n'a pas dépassé le TTL de 24h
 async function getCached() {
   try {
     const raw = await AsyncStorage.getItem(CACHE_KEY);
@@ -28,12 +29,14 @@ async function getCachedIgnoringTTL() {
   }
 }
 
+// Enregistre le résultat Overpass dans le cache avec l'horodatage actuel
 async function setCached(elements) {
   try {
     await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), elements }));
   } catch {}
 }
 
+// Miroirs Overpass essayés dans l'ordre en cas d'échec
 const OVERPASS_API_URLS = [
   'https://z.overpass-api.de/api/interpreter',
   'https://lz4.overpass-api.de/api/interpreter',
@@ -45,6 +48,7 @@ const OVERPASS_HEADERS = {
   'User-Agent': 'CityMap/1.0 (local Expo React Native student project)',
 };
 
+// Construit la requête Overpass QL listant les lieux d'intérêt autour de Serris
 const buildSerrisPlacesQuery = () => `
 [out:json][timeout:25];
 // Equivalent API du macro Overpass Turbo {{geocodeArea:Serris}}.
@@ -72,6 +76,7 @@ area["name"="Serris"]["boundary"="administrative"]["admin_level"="8"]->.searchAr
 out geom;
 `;
 
+// Transforme une erreur axios/Overpass en message lisible
 const getOverpassErrorMessage = (error) => {
   const apiError =
     typeof error.response?.data === 'string'
@@ -85,6 +90,7 @@ const getOverpassErrorMessage = (error) => {
     : error.message || 'Erreur inconnue pendant la recuperation des lieux.';
 };
 
+// Envoie la requête au premier miroir Overpass disponible
 const postOverpassQuery = async (query) => {
   let lastError = null;
   const body = `data=${encodeURIComponent(query)}`;

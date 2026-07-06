@@ -5,12 +5,14 @@ import { useAppTheme } from '../../context/ThemeContext';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Rend l'icône pleine quand l'onglet est actif, sinon l'icône outline
 function icon(name: IoniconName, activeName: IoniconName) {
   return ({ color, focused }: { color: string; focused: boolean }) => (
     <Ionicons name={focused ? activeName : name} size={24} color={color} />
   );
 }
 
+// Barre d'onglets principale : Carte / Listes / Alertes / Profil
 export default function TabLayout() {
   const { C } = useAppTheme();
 

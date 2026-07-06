@@ -21,6 +21,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Icône/couleurs affichées selon le type de notification
 const NOTIF_META: Record<
   Notification['type'],
   { icon: IoniconName; bg: string; color: string }
@@ -32,6 +33,7 @@ const NOTIF_META: Record<
   reminder: { icon: 'time', bg: 'rgba(247,168,79,0.15)', color: '#f7a84f' },
 };
 
+// Formate une date en "il y a X min/h/jours"
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -43,6 +45,7 @@ function timeAgo(dateStr: string): string {
   return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
 }
 
+// Écran "Alertes" : liste des notifications de l'utilisateur
 export default function NotificationsScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -51,6 +54,7 @@ export default function NotificationsScreen() {
   const { C } = useAppTheme();
   const styles = useMemo(() => getStyles(C), [C]);
 
+  // Recharge les notifications de l'utilisateur courant
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user) { router.replace('/auth'); return; }
@@ -60,16 +64,19 @@ export default function NotificationsScreen() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Marque une notification comme lue
   async function handleRead(id: string) {
     await markNotifRead(id);
     reload();
   }
 
+  // Supprime une notification
   async function handleDelete(id: string) {
     await deleteNotif(id);
     reload();
   }
 
+  // Marque toutes les notifications comme lues
   async function handleReadAll() {
     if (!userId) return;
     await markAllNotifsRead(userId);

@@ -12,12 +12,15 @@ export type Suggestion = {
   lng: number;
 };
 
+// Coordonnées de secours si l'utilisateur n'a encore aucun lieu sauvegardé
 const DEFAULT_COORDS = { lat: 48.852, lon: 2.782 };
 
+// Déduit le type d'un élément Overpass à partir de ses tags
 function placeType(tags: Record<string, string> = {}): string {
   return tags.amenity || tags.tourism || tags.historic || tags.leisure || tags.shop || 'lieu';
 }
 
+// Extrait les coordonnées d'un élément Overpass (point ou centre d'une zone)
 function placeCoords(el: any): { lat: number; lon: number } | null {
   if (Number.isFinite(el.lat) && Number.isFinite(el.lon)) return { lat: el.lat, lon: el.lon };
   if (Number.isFinite(el.center?.lat) && Number.isFinite(el.center?.lon)) {
@@ -26,6 +29,7 @@ function placeCoords(el: any): { lat: number; lon: number } | null {
   return null;
 }
 
+// Distance à vol d'oiseau entre deux coordonnées (formule de Haversine)
 function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;

@@ -26,11 +26,13 @@ import { getSuggestions, Suggestion } from '../../suggestions';
 import { Skeleton } from '../../components/Skeleton';
 import { useAppTheme } from '../../context/ThemeContext';
 
+// Couleurs et emojis proposés à la création d'une liste
 const LIST_COLORS = ['#4f8ef7', '#22d3a8', '#f7a84f', '#c47bf7', '#f75f5f', '#70d4f7'];
 const LIST_EMOJIS = ['📍', '🍽️', '✈️', '🏖️', '🎯', '🛍️', '🎭', '🌿', '🍷', '🏔️', '🏛️', '🌆'];
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
+// Écran "Listes" : vue d'ensemble des listes de l'utilisateur
 export default function ListsScreen() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -49,6 +51,7 @@ export default function ListsScreen() {
   const { C } = useAppTheme();
   const styles = useMemo(() => getStyles(C), [C]);
 
+  // Recharge l'utilisateur courant et ses listes depuis le store
   const reload = useCallback(async () => {
     const user = await getCurrentUser();
     if (!user) { router.replace('/auth'); return; }
@@ -71,6 +74,7 @@ export default function ListsScreen() {
 
   const totalPlaces = lists.flatMap(l => l.places).length;
 
+  // Crée la nouvelle liste depuis le formulaire de la modale
   async function handleCreate() {
     if (!userId || !newTitle.trim()) return;
     await createList(userId, newTitle.trim(), newDesc.trim(), newEmoji, newColor);
@@ -82,6 +86,7 @@ export default function ListsScreen() {
     reload();
   }
 
+  // Ouvre la modale de suggestions IA et charge les recommandations
   async function handleOpenAI() {
     setShowAI(true);
     setAiLoading(true);
@@ -95,6 +100,7 @@ export default function ListsScreen() {
     }
   }
 
+  // Chiffres résumés affichés en haut de l'écran
   const stats: { label: string; value: number; icon: IoniconName; color: string }[] = [
     { label: 'Listes', value: lists.length, icon: 'layers', color: C.primary },
     { label: 'Lieux', value: totalPlaces, icon: 'location', color: C.accent },
