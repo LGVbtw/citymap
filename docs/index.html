@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Citymap - Android</title>
+    <meta name="description" content="Telecharger l'application Android Citymap.">
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6fbff;
+        --ink: #102033;
+        --muted: #526476;
+        --primary: #208aef;
+        --primary-dark: #0c64b8;
+        --line: #d7e8f8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+      }
+
+      main {
+        width: min(960px, calc(100% - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        display: grid;
+        align-items: center;
+        padding: 64px 0;
+      }
+
+      .panel {
+        display: grid;
+        gap: 28px;
+      }
+
+      .badge {
+        width: fit-content;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--primary-dark);
+        background: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 780px;
+        font-size: clamp(42px, 8vw, 82px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0;
+        max-width: 620px;
+        color: var(--muted);
+        font-size: 20px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      a.button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 0 22px;
+        border-radius: 8px;
+        color: #ffffff;
+        background: var(--primary);
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 12px 28px rgba(32, 138, 239, 0.22);
+      }
+
+      a.button:hover,
+      a.button:focus-visible {
+        background: var(--primary-dark);
+      }
+
+      a.link {
+        color: var(--primary-dark);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .note {
+        max-width: 700px;
+        padding-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel" aria-labelledby="title">
+        <div class="badge">APK Android</div>
+        <h1 id="title">Citymap</h1>
+        <p>
+          Installez la derniere version Android generee automatiquement par GitHub Actions.
+        </p>
+        <div class="actions">
+          <a class="button" href="https://github.com/LGVbtw/citymap/releases/latest/download/citymap-android.apk">
+            Telecharger l'APK
+          </a>
+          <a class="link" href="https://github.com/LGVbtw/citymap/releases/latest">
+            Voir la release
+          </a>
+        </div>
+        <p class="note">
+          Sur Android, autorisez l'installation depuis le navigateur si le systeme vous le demande.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

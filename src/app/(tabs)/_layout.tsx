@@ -6,9 +6,14 @@ import { useAppTheme } from '../../context/ThemeContext';
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 function icon(name: IoniconName, activeName: IoniconName) {
-  return ({ color, focused }: { color: string; focused: boolean }) => (
+  function TabBarIcon({ color, focused }: { color: string; focused: boolean }) {
+    return (
     <Ionicons name={focused ? activeName : name} size={24} color={color} />
-  );
+    );
+  }
+
+  TabBarIcon.displayName = `TabBarIcon(${name})`;
+  return TabBarIcon;
 }
 
 export default function TabLayout() {

@@ -55,6 +55,7 @@ export default function ProfileScreen() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState(DEFAULT_NOTIF_PREFS);
   const { themeMode, setThemeMode, C } = useAppTheme();
+  const styles = useMemo(() => getStyles(C), [C]);
 
   useEffect(() => {
     (async () => {
@@ -121,7 +122,6 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const initials = user.username.slice(0, 2).toUpperCase();
-  const styles = useMemo(() => getStyles(C), [C]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

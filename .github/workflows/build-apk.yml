@@ -1,0 +1,71 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "Add an EXPO_TOKEN repository secret from https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build APK on EAS
+        run: eas build --platform android --profile apk --non-interactive --wait --json > eas-build.json
+
+      - name: Download APK
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('eas-build.json', 'utf8'));
+          const build = Array.isArray(data) ? data[0] : data;
+          const url = build?.artifacts?.buildUrl;
+          if (!url) {
+            console.error('Unable to find artifacts.buildUrl in EAS output.');
+            process.exit(1);
+          }
+          fs.writeFileSync('apk-url.txt', url);
+          NODE
+          curl -L "$(cat apk-url.txt)" -o citymap-android.apk
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: citymap-android-apk
+          path: citymap-android.apk
+
+      - name: Publish latest release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --title "Latest Android APK" --notes "Latest Android APK built by GitHub Actions."
+          gh release upload android-latest citymap-android.apk --clobber

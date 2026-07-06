@@ -1,13 +1,13 @@
-# Welcome to your Expo app 👋
+# Citymap
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application Expo / React Native.
 
 ## Get started
 
 1. Install dependencies
 
    ```bash
-   npm install
+   npm ci
    ```
 
 2. Start the app
@@ -16,41 +16,43 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Android APK with GitHub Actions
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The workflow `.github/workflows/build-apk.yml` builds an Android APK with EAS and publishes it as the `citymap-android.apk` asset on the `android-latest` GitHub release.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Required setup:
 
-## Get a fresh project
+1. Create an Expo access token at https://expo.dev/settings/access-tokens.
+2. Add it to this GitHub repository as an Actions secret named `EXPO_TOKEN`.
+3. Make sure the app has been initialized on EAS at least once, so EAS credentials and the project ID exist for non-interactive CI builds.
+4. Run the `Build Android APK` workflow from GitHub Actions, or push to `main`.
 
-When you're ready, run:
+The direct APK URL used by the landing page is:
 
 ```bash
-npm run reset-project
+https://github.com/LGVbtw/citymap/releases/latest/download/citymap-android.apk
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## GitHub Pages landing page
 
-### Other setup steps
+The static landing page lives in `docs/index.html` and is deployed by `.github/workflows/pages.yml`.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Expected public URL:
 
-## Learn more
+```bash
+https://lgvbtw.github.io/citymap/
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+If Pages is not enabled yet, set GitHub Pages to use GitHub Actions in the repository settings.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Local checks
 
-## Join the community
+```bash
+npx expo lint
+```
 
-Join our community of developers creating universal apps.
+## Useful Expo references
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Expo SDK 56 reference: https://docs.expo.dev/versions/v56.0.0/
+- APK builds with EAS: https://docs.expo.dev/build-reference/apk/
+- EAS builds from CI: https://docs.expo.dev/build/building-on-ci/
