@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -21,6 +22,7 @@ import {
   createList,
   getCurrentUser,
   getUserLists,
+  type ListItem,
 } from '../../store';
 import { useAppTheme } from '../../context/ThemeContext';
 
@@ -123,6 +125,9 @@ export default function MapScreen() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<any | null>(null);
+  const [pickerPlace, setPickerPlace] = useState<any | null>(null);
+  const [pickerLists, setPickerLists] = useState<ListItem[]>([]);
+  const [newListTitle, setNewListTitle] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const { isLightTheme, C } = useAppTheme();
@@ -168,45 +173,63 @@ export default function MapScreen() {
     return () => { mounted = false; };
   }, []);
 
-  async function handleSave(place: any) {
-    const key = `${place.osmType}-${place.osmId}`;
+  async function openListPicker(place: any) {
     try {
-      setSavingKey(key);
-
       const user = await getCurrentUser();
       if (!user) {
         Alert.alert('Non connecté', 'Connectez-vous pour sauvegarder des lieux.');
         return;
       }
-
-      // Trouver ou créer la liste "Favoris"
       const lists = await getUserLists(user.id);
-      let favList = lists.find(l => l.title === 'Favoris');
-      if (!favList) {
-        favList = await createList(user.id, 'Favoris', 'Mes lieux favoris de la carte', '⭐', '#f7a84f');
-      }
+      setPickerLists(lists);
+      setPickerPlace(place);
+    } catch {
+      Alert.alert('Erreur', 'Impossible de charger vos listes.');
+    }
+  }
 
-      // Éviter les doublons
-      if (favList.places.some(p => p.name === place.displayName)) {
-        Alert.alert('Déjà sauvegardé', `${place.displayName} est déjà dans vos Favoris.`);
+  async function handleAddToList(list: ListItem) {
+    if (!pickerPlace) return;
+    const key = `${pickerPlace.osmType}-${pickerPlace.osmId}`;
+    try {
+      setSavingKey(key);
+
+      if (list.places.some(p => p.name === pickerPlace.displayName)) {
+        Alert.alert('Déjà sauvegardé', `${pickerPlace.displayName} est déjà dans "${list.title}".`);
         return;
       }
 
-      await addPlaceToList(favList.id, {
-        name: place.displayName,
-        type: place.displayType,
+      await addPlaceToList(list.id, {
+        name: pickerPlace.displayName,
+        type: pickerPlace.displayType,
         notes: '',
         price: 1,
-        googleMapsLink: `https://maps.google.com/?q=${place.coordinate.latitude},${place.coordinate.longitude}`,
-        latitude: place.coordinate.latitude,
-        longitude: place.coordinate.longitude,
+        googleMapsLink: `https://maps.google.com/?q=${pickerPlace.coordinate.latitude},${pickerPlace.coordinate.longitude}`,
+        latitude: pickerPlace.coordinate.latitude,
+        longitude: pickerPlace.coordinate.longitude,
       });
 
-      Alert.alert('Ajouté aux Favoris ⭐', `${place.displayName} a été ajouté à votre liste Favoris.`);
+      Alert.alert('Ajouté ✅', `${pickerPlace.displayName} a été ajouté à "${list.title}".`);
     } catch {
       Alert.alert('Erreur', 'Impossible de sauvegarder ce lieu.');
     } finally {
       setSavingKey(null);
+      setPickerPlace(null);
+      setSelectedPlace(null);
+    }
+  }
+
+  async function handleCreateListAndAdd() {
+    const title = newListTitle.trim();
+    if (!title || !pickerPlace) return;
+    try {
+      const user = await getCurrentUser();
+      if (!user) return;
+      const list = await createList(user.id, title, '', '📍', C.primary);
+      setNewListTitle('');
+      await handleAddToList(list);
+    } catch {
+      Alert.alert('Erreur', 'Impossible de créer la liste.');
     }
   }
 
@@ -375,7 +398,7 @@ export default function MapScreen() {
                     </View>
                   </View>
                   <TouchableOpacity
-                    onPress={() => handleSave(place)}
+                    onPress={() => openListPicker(place)}
                     disabled={saving}
                     style={[styles.saveBtn, saving && { opacity: 0.5 }]}
                   >
@@ -476,10 +499,7 @@ export default function MapScreen() {
                   </View>
 
                   <TouchableOpacity
-                    onPress={async () => {
-                      await handleSave(selectedPlace);
-                      setSelectedPlace(null);
-                    }}
+                    onPress={() => openListPicker(selectedPlace)}
                     disabled={saving}
                     style={[styles.sheetSaveBtn, { backgroundColor: color }, saving && { opacity: 0.5 }]}
                   >
@@ -495,6 +515,66 @@ export default function MapScreen() {
                 </>
               );
             })()}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Choix de la liste */}
+      <Modal
+        visible={!!pickerPlace}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPickerPlace(null)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setPickerPlace(null)}>
+          <Pressable style={styles.sheet} onPress={e => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetName, { flex: 1 }]}>Ajouter à une liste</Text>
+              <TouchableOpacity onPress={() => setPickerPlace(null)} style={styles.sheetClose}>
+                <Ionicons name="close" size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 260 }}>
+              {pickerLists.length === 0 ? (
+                <Text style={styles.emptySubtext}>Vous n'avez pas encore de liste.</Text>
+              ) : (
+                pickerLists.map(list => (
+                  <TouchableOpacity
+                    key={list.id}
+                    style={styles.listPickRow}
+                    onPress={() => handleAddToList(list)}
+                    disabled={savingKey !== null}
+                  >
+                    <Text style={{ fontSize: 20 }}>{list.emoji}</Text>
+                    <Text style={styles.listPickTitle} numberOfLines={1}>{list.title}</Text>
+                    {savingKey !== null ? (
+                      <ActivityIndicator size="small" color={C.textMuted} />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.newListRow}>
+              <TextInput
+                style={styles.newListInput}
+                placeholder="Nouvelle liste…"
+                placeholderTextColor={C.textMuted}
+                value={newListTitle}
+                onChangeText={setNewListTitle}
+              />
+              <TouchableOpacity
+                onPress={handleCreateListAndAdd}
+                disabled={!newListTitle.trim()}
+                style={[styles.newListBtn, { backgroundColor: C.primary }, !newListTitle.trim() && { opacity: 0.5 }]}
+              >
+                <Ionicons name="add" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -566,6 +646,23 @@ const getStyles = (C: any) => StyleSheet.create({
     gap: 8, paddingVertical: 15, borderRadius: 14,
   },
   sheetSaveText: { color: 'white', fontWeight: '700', fontSize: 16 },
+  listPickRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, paddingHorizontal: 4,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  listPickTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
+  newListRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16,
+  },
+  newListInput: {
+    flex: 1, backgroundColor: C.muted, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.text,
+  },
+  newListBtn: {
+    width: 44, height: 44, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
   filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 14 },
   chip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
